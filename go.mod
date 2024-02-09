@@ -2,7 +2,10 @@ module github.com/PetarPeychev/go-task-scheduler
 
 go 1.22.0
 
-require github.com/nats-io/nats.go v1.32.0
+require (
+	github.com/google/uuid v1.6.0
+	github.com/nats-io/nats.go v1.32.0
+)
 
 require (
 	github.com/klauspost/compress v1.17.2 // indirect

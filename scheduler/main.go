@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
 
@@ -34,13 +35,13 @@ func main() {
 
 	// Publish a message to the tasks subject every 10 seconds
 	for {
-		message := []byte(time.Now().Format(time.RFC3339) + " New task")
+		message := []byte(uuid.New().String())
 		err := nc.Publish(tasksSubject, message)
 		if err != nil {
 			log.Printf("Failed to publish message: %v", err)
 		} else {
 			log.Printf("Published message to subject %q: %s", tasksSubject, message)
 		}
-		time.Sleep(10 * time.Second) // Wait before sending the next message
+		time.Sleep(time.Millisecond * 10) // Wait before sending the next message
 	}
 }
