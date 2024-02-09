@@ -5,31 +5,42 @@ import (
 	"os"
 	"time"
 
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	RABBITMQ_URL := os.Getenv("RABBITMQ_URL")
+	// Get configuration from environment variables
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		log.Fatal("NATS_URL environment variable is empty or not set")
+	}
+	tasksSubject := os.Getenv("TASKS_SUBJECT")
+	if tasksSubject == "" {
+		log.Fatal("TASKS_SUBJECT environment variable is empty or not set")
+	}
 
-	// Connect to RabbitMQ
-	var conn *amqp.Connection
-	var err error
+	// Connect to NATS
+	nc, err := nats.Connect(
+		natsURL,
+		nats.RetryOnFailedConnect(true),
+		nats.MaxReconnects(-1),
+		nats.ReconnectWait(time.Second*5),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	defer nc.Close()
+	log.Println("Connected to NATS")
+
+	// Publish a message to the tasks subject every 10 seconds
 	for {
-		conn, err = amqp.Dial(RABBITMQ_URL)
+		message := []byte(time.Now().Format(time.RFC3339) + " New task")
+		err := nc.Publish(tasksSubject, message)
 		if err != nil {
-			log.Printf("Failed to connect to RabbitMQ: %v", err)
+			log.Printf("Failed to publish message: %v", err)
 		} else {
-			log.Println("Connected to RabbitMQ")
-			break
+			log.Printf("Published message to subject %q: %s", tasksSubject, message)
 		}
-		time.Sleep(time.Second * 5)
+		time.Sleep(10 * time.Second) // Wait before sending the next message
 	}
-	defer conn.Close()
-
-	for {
-		time.Sleep(time.Second * 10)
-		log.Println("Scheduler is running...")
-	}
-
-	// Continue with setting up channels, declaring queues, etc.
 }
